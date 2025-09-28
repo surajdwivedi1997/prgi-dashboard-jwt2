@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>PRGI Enterprise Dashboard</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* same styles you had, unchanged for brevity */
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-container">
+        <div class="header-left">
+            <img src="images/prgi-logo.png" alt="PRGI Logo">
+        </div>
+        <div class="header-right">
+            <div class="filters">
+                <strong>PRGI Enterprise Dashboard - Application Status Report</strong>
+                <div class="action-row">
+                    <select id="rangeSelect">
+                        <option value="">Select Date Range</option>
+                        <option value="2025-09-08|2025-09-18">08-09-2025 to 18-09-2025</option>
+                    </select>
+                    <button id="btnApply">Apply Filters</button>
+                    <button id="btnExcel" style="display:none;">Export Excel</button>
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main id="modules">
+    <!-- Stats grid as before -->
+</main>
+
+<div id="dataModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Application Details</h3>
+            <div>
+                <button id="modalExcelBtn">Export Excel</button>
+                <button class="close">&times;</button>
+            </div>
+        </div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<div id="customNotification" class="notification">
+    <div class="notification-content">
+        <div class="notification-icon"></div>
+        <div class="notification-message"></div>
+        <button class="notification-close">&times;</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+            window.location.replace("login.html");
+            return;
+        }
+
+        function logout() {
+            localStorage.removeItem("jwtToken");
+            sessionStorage.clear();
+            window.location.replace("login.html");
+        }
+
+        // Prevent back/forward caching
+        window.history.pushState(null, "", window.location.href);
+        window.addEventListener("popstate", logout);
+
+        window.addEventListener("pageshow", (e) => {
+            if (e.persisted && !localStorage.getItem("jwtToken")) {
+                window.location.replace("login.html");
+            }
+        });
+
+        buildShell();
+
+        const applyBtn = document.getElementById('btnApply');
+        const excelBtn = document.getElementById('btnExcel');
+        const modal = document.getElementById("dataModal");
+        const closeBtn = modal.querySelector(".close");
+        const modalExcelBtn = document.getElementById("modalExcelBtn");
+        const logoutBtn = document.getElementById("logoutBtn");
+
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                applyBtn.innerHTML = 'Loading...';
+                applyBtn.disabled = true;
+
+                loadSummary().then(() => {
+                    excelBtn.style.display = "inline-block";
+                    attachCardClicks();
+                    applyBtn.innerHTML = 'Apply Filters';
+                    applyBtn.disabled = false;
+                });
+            });
+        }
+
+        if (excelBtn) excelBtn.addEventListener('click', exportToExcel);
+        if (logoutBtn) logoutBtn.addEventListener("click", logout);
+
+        closeBtn.onclick = () => closeModal();
+        window.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+        // 🔹 Fixed URLs: use /api/applications/*
+        function attachCardClicks() {
+            const newAppCard = document.getElementById("card-NEW_REGISTRATION_NEW_APPLICATION");
+            if (newAppCard) {
+                newAppCard.addEventListener("click", () => {
+                    fetchAndShow("/api/applications/new-registration/new-applications", "New Applications");
+                });
+            }
+            const deficientCard = document.getElementById("card-NEW_REGISTRATION_DEFICIENT_AWAITING_PUBLISHER");
+            if (deficientCard) {
+                deficientCard.addEventListener("click", () => {
+                    fetchAndShow("/api/applications/new-registration/deficient", "Deficient Applications");
+                });
+            }
+        }
+
+        function fetchAndShow(url, title) {
+            document.getElementById("modalTitle").textContent = title;
+            document.getElementById("modalBody").innerHTML =
+                "<div class='spinner-container'><div class='spinner'></div></div>";
+            modal.style.display = "block";
+            document.body.style.overflow = "hidden";
+
+            fetch(url, { headers: { "Authorization": "Bearer " + token } })
+                .then(r => {
+                    if (r.status === 401) throw new Error("Unauthorized");
+                    if (r.status === 403) throw new Error("Forbidden");
+                    return r.json();
+                })
+                .then(data => {
+                    document.getElementById("modalBody").innerHTML = buildTable(data);
+                    modalExcelBtn.style.display = "inline-block";
+                })
+                .catch(err => {
+                    console.error("Error:", err);
+                    if (err.message === "Unauthorized") {
+                        logout();
+                    } else if (err.message === "Forbidden") {
+                        document.getElementById("modalBody").innerHTML =
+                            `<p style="text-align:center; color: red; font-size:16px; padding:40px;">
+                                🚫 You do not have permission to view these details.
+                            </p>`;
+                    } else {
+                        showNotification("Something went wrong while fetching data.", "error");
+                        closeModal();
+                    }
+                });
+        }
+
+        function closeModal() {
+            modal.style.display = "none";
+            document.body.style.overflow = "";
+            modalExcelBtn.style.display = "none";
+        }
+
+        function buildTable(data) {
+            if (!data || data.length === 0)
+                return "<p style='text-align: center; color: gray; font-size: 16px; padding: 40px;'>No records found.</p>";
+            let cols = Object.keys(data[0]);
+            let html = "<div class='table-wrapper'><table id='modalTable'><thead><tr>";
+            cols.forEach(c => html += `<th>${c}</th>`);
+            html += "</tr></thead><tbody>";
+            data.forEach(row => {
+                html += "<tr>";
+                cols.forEach(c => html += `<td>${row[c] ?? ""}</td>`);
+                html += "</tr>";
+            });
+            html += "</tbody></table></div>";
+            return html;
+        }
+
+        function exportModalTableToExcel(title) {
+            const table = document.getElementById("modalTable");
+            if (!table) return;
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(table);
+            XLSX.utils.book_append_sheet(wb, ws, "Data");
+            XLSX.writeFile(wb, `${title.replace(/\s+/g, "_")}.xlsx`);
+        }
+    });
+</script>
+</body>
+</html>
