@@ -108,11 +108,12 @@ header {
     margin: 0 auto;
 }
 
-header-left img {
-    height: 60px;      /* increase from 40px */
-    max-height: 60px; /* allow bigger size */
+.header-left img {
+    height: 55px;       /* medium size */
+    max-height: 60px;   /* cap size */
     object-fit: contain;
     filter: brightness(1.2);
+    margin: 5px 0;      /* small vertical spacing */
 }
 
 .header-right {
