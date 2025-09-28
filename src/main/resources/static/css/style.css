@@ -109,8 +109,8 @@ header {
 }
 
 header-left img {
-    height: 80px;      /* increase from 40px */
-    max-height: 100px; /* allow bigger size */
+    height: 60px;      /* increase from 40px */
+    max-height: 60px; /* allow bigger size */
     object-fit: contain;
     filter: brightness(1.2);
 }
