@@ -552,29 +552,15 @@
 
         messageEl.textContent = message;
         notification.className = `notification show ${type}`;
-
-        // Set icon based on type
         switch(type) {
-            case 'success':
-                iconEl.innerHTML = '✓';
-                break;
-            case 'error':
-                iconEl.innerHTML = '✕';
-                break;
-            case 'warning':
-                iconEl.innerHTML = '!';
-                break;
-            default:
-                iconEl.innerHTML = 'i';
+            case 'success': iconEl.innerHTML = '✓'; break;
+            case 'error': iconEl.innerHTML = '✕'; break;
+            case 'warning': iconEl.innerHTML = '!'; break;
+            default: iconEl.innerHTML = 'i';
         }
-
-        // Auto hide after duration
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, duration);
+        setTimeout(() => { notification.classList.remove('show'); }, duration);
     }
 
-    // Close notification manually
     document.querySelector('.notification-close').addEventListener('click', () => {
         document.getElementById('customNotification').classList.remove('show');
     });
@@ -584,7 +570,6 @@
         document.getElementById("signupForm").classList.toggle("hidden");
     }
 
-    // Toggle password visibility
     function togglePassword(inputId, el) {
         const input = document.getElementById(inputId);
         if (input.type === "password") {
@@ -596,7 +581,7 @@
         }
     }
 
-    // Login handler
+    // 🔹 Login handler
     document.getElementById("loginForm").addEventListener("submit", async e => {
         e.preventDefault();
         const submitBtn = e.target.querySelector('.btn-login');
@@ -607,7 +592,7 @@
         submitBtn.textContent = 'Signing In...';
 
         try {
-            const res = await fetch("http://localhost:8080/login", {
+            const res = await fetch("/login", {   // ✅ relative URL
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({ email, password })
@@ -627,7 +612,7 @@
         }
     });
 
-    // Signup handler
+    // 🔹 Signup handler
     document.getElementById("signupForm").addEventListener("submit", async e => {
         e.preventDefault();
         const submitBtn = e.target.querySelector('.btn-login');
@@ -645,7 +630,7 @@
         submitBtn.textContent = 'Creating Account...';
 
         try {
-            const res = await fetch("http://localhost:8080/regis", {
+            const res = await fetch("/regis", {   // ✅ relative URL
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({ name, email, password })
