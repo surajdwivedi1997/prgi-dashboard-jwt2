@@ -192,10 +192,16 @@ function fetchAndShow(url, title) {
       })
       .then(data => {
         document.getElementById("modalBody").innerHTML = buildTable(data);
+
         const modalExcelBtn = document.getElementById("modalExcelBtn");
         if (modalExcelBtn) {
-          modalExcelBtn.style.display = "inline-block";
-          modalExcelBtn.onclick = () => exportModalTableToExcel(title);
+          const role = localStorage.getItem("userRole"); // ✅ check role
+          if (role === "ROLE_ADMIN") {
+            modalExcelBtn.style.display = "inline-block";
+            modalExcelBtn.onclick = () => exportModalTableToExcel(title);
+          } else {
+            modalExcelBtn.style.display = "none"; // ✅ hide for users
+          }
         }
       })
       .catch(err => {
@@ -206,7 +212,6 @@ function fetchAndShow(url, title) {
             "</p>";
       });
 }
-
 function buildTable(data) {
   if (!data || data.length === 0) return "<p>No records found.</p>";
   let cols = Object.keys(data[0]);
