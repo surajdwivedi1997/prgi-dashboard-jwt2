@@ -29,18 +29,13 @@ public class SecConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // 🔹 Allow public endpoints
-                        .requestMatchers("/login", "/regis").permitAll()
-                        .requestMatchers("/index.html", "/login.html", "/css/**", "/js/**", "/images/**").permitAll()
-                        // 🔹 APIs
-                        .requestMatchers("/api/applications/**").hasAnyRole("ADMIN", "USER")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/admin/regis").permitAll()
-
-                        // 🔹 everything else
-                        .anyRequest().authenticated()
-                )
+               .authorizeHttpRequests(auth -> auth
+    .requestMatchers("/", "/login", "/regis").permitAll()
+    .requestMatchers("/index.html", "/login.html", "/css/**", "/js/**", "/images/**").permitAll()
+    .requestMatchers("/api/applications/**").hasAnyRole("ADMIN", "USER")
+    .requestMatchers("/api/admin/**").hasRole("ADMIN")
+    .anyRequest().authenticated()
+)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
