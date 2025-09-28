@@ -30,7 +30,7 @@ public class SecConfig {
         http
                 .csrf(csrf -> csrf.disable())
                .authorizeHttpRequests(auth -> auth
-    .requestMatchers("/", "/login", "/regis").permitAll()
+    .requestMatchers("/", "/login", "/regis" , "/admin/regis).permitAll()
     .requestMatchers("/index.html", "/login.html", "/css/**", "/js/**", "/images/**").permitAll()
     .requestMatchers("/api/applications/**").hasAnyRole("ADMIN", "USER")
     .requestMatchers("/api/admin/**").hasRole("ADMIN")
