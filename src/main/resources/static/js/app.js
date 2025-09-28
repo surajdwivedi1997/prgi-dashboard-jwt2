@@ -178,6 +178,11 @@ function enableTileClicks(summary) {
 
 function fetchAndShow(url, title) {
   const modal = document.getElementById("dataModal");
+  const modalExcelBtn = document.getElementById("modalExcelBtn");
+
+  // ✅ Always hide button at start
+  if (modalExcelBtn) modalExcelBtn.style.display = "none";
+
   document.getElementById("modalTitle").textContent = title;
   document.getElementById("modalBody").innerHTML =
       "<div class='spinner-container'><div class='spinner'></div></div>";
@@ -193,25 +198,22 @@ function fetchAndShow(url, title) {
       .then(data => {
         document.getElementById("modalBody").innerHTML = buildTable(data);
 
-        const modalExcelBtn = document.getElementById("modalExcelBtn");
-        if (modalExcelBtn) {
-          const role = localStorage.getItem("userRole"); // ✅ check role
-          if (role === "ROLE_ADMIN") {
-            modalExcelBtn.style.display = "inline-block";
-            modalExcelBtn.onclick = () => exportModalTableToExcel(title);
-          } else {
-            modalExcelBtn.style.display = "none"; // ✅ hide for users
-          }
+        // ✅ Show Excel button only if ADMIN
+        const role = localStorage.getItem("userRole");
+        if (modalExcelBtn && role === "ROLE_ADMIN" && data.length > 0) {
+          modalExcelBtn.style.display = "inline-block";
+          modalExcelBtn.onclick = () => exportModalTableToExcel(title);
         }
       })
       .catch(err => {
         console.error("Error:", err);
         document.getElementById("modalBody").innerHTML =
             "<p style='color:red; text-align:center;'>" +
-            (err.message === "Access denied" ? "🚫 Access Denied" : "Failed to load data.") +
+            (err.message === "Access denied" ? "🚫 You do not have permission to view these details." : "⚠ Failed to load data.") +
             "</p>";
       });
 }
+
 function buildTable(data) {
   if (!data || data.length === 0) return "<p>No records found.</p>";
   let cols = Object.keys(data[0]);
