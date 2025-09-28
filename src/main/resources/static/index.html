@@ -42,7 +42,7 @@
         <div class="modal-header">
             <h3 id="modalTitle">Application Details</h3>
             <div>
-                <button id="modalExcelBtn">Export Excel</button>
+                <button id="modalExcelBtn" style="display:none;">Export Excel</button>
                 <button class="close">&times;</button>
             </div>
         </div>
@@ -99,7 +99,10 @@
                 applyBtn.disabled = true;
 
                 loadSummary().then(() => {
-                    excelBtn.style.display = "inline-block";
+                    const role = localStorage.getItem("userRole");
+                    if (role === "ROLE_ADMIN") {
+                        excelBtn.style.display = "inline-block";
+                    }
                     attachCardClicks();
                     applyBtn.innerHTML = 'Apply Filters';
                     applyBtn.disabled = false;
@@ -113,7 +116,6 @@
         closeBtn.onclick = () => closeModal();
         window.onclick = (e) => { if (e.target === modal) closeModal(); };
 
-        // 🔹 Fixed URLs: use /api/applications/*
         function attachCardClicks() {
             const newAppCard = document.getElementById("card-NEW_REGISTRATION_NEW_APPLICATION");
             if (newAppCard) {
@@ -144,10 +146,20 @@
                 })
                 .then(data => {
                     document.getElementById("modalBody").innerHTML = buildTable(data);
-                    modalExcelBtn.style.display = "inline-block";
+
+                    // 🔹 Show Excel only for Admin
+                    const role = localStorage.getItem("userRole");
+                    if (role === "ROLE_ADMIN" && data.length > 0) {
+                        modalExcelBtn.style.display = "inline-block";
+                        modalExcelBtn.onclick = () => exportModalTableToExcel(title);
+                    } else {
+                        modalExcelBtn.style.display = "none";
+                    }
                 })
                 .catch(err => {
                     console.error("Error:", err);
+                    modalExcelBtn.style.display = "none"; // Hide button for forbidden/error
+
                     if (err.message === "Unauthorized") {
                         logout();
                     } else if (err.message === "Forbidden") {
